@@ -1,0 +1,3 @@
+[submodule "ms-address"]
+	path = ms-address
+	url = https://github.com/Stollpy/MS-Address.git
