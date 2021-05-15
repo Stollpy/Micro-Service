@@ -3,4 +3,4 @@
 	url = https://github.com/Stollpy/MS-Address.git
 [submodule "ms-user"]
 	path = ms-user
-	url = https://github.com/Stollpy/MS-Address.git
+	url = https://github.com/Stollpy/MS-User.git
