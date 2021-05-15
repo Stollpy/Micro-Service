@@ -1,0 +1,113 @@
+version: "3.8"
+services:
+
+  # Traefik
+  traefik:
+    image: traefik:v2.3.6
+    restart: always
+    command:
+      - --accesslog
+      - --api.insecure=true
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 80:80     # http
+      - 8080:8080 # dashboard
+    networks:
+      - app
+
+
+  # Service permettant de générer une paire de clé ssl
+  reverse-proxy-https-helper:
+    image: alpine
+    container_name: generate_key_ssl
+    command: sh -c "cd /etc/ssl/traefik
+      && wget traefik.me/cert.pem -O cert.pem
+      && wget traefik.me/privkey.pem -O privkey.pem"
+    volumes:
+      - certs:/etc/ssl/traefik
+    networks:
+      - app
+
+
+  # Network User
+
+  # BDD #
+  db-user:
+    image: mysql
+    container_name: db_user
+    restart: always
+    volumes:
+      - db-user:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ms-user
+    ports:
+      - 33061:3306
+    networks:
+      - app
+
+  # Micro-Service #
+  ms-user:
+    build: ms-user
+    container_name: ms-user
+    expose:
+      - 80
+    volumes:
+      - ./ms-user/vhosts:/etc/apache2/sites-enabled
+      - ./ms-user/:/var/www/html/user
+    restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ms-user.rule=Host(`mydemoapp.com`) && PathPrefix(`/api/users`)
+    networks:
+      - app
+
+
+
+  # Network Address
+
+  # BDD #
+  db-address:
+    image: mysql
+    container_name: db_address
+    restart: always
+    volumes:
+      - db-address:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ms-address
+    ports:
+      - 33062:3306
+    networks:
+      - app
+
+  # Micro-Service #
+  ms-address:
+    build: ms-address
+    container_name: ms-address
+    expose:
+      - 80
+    volumes:
+      - ./ms-address/vhosts:/etc/apache2/sites-enabled
+      - ./ms-address/:/var/www/html/address
+    restart: always
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ms-address.rule=Host(`mydemoapp.com`) && PathPrefix(`/api/addresses`)
+    networks:
+      - app
+
+
+networks:
+  app:
+
+
+volumes:
+  db-user:
+
+  db-address:
+
+  certs:
