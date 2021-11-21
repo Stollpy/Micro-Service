@@ -14,7 +14,3 @@ if everything is ok the app will be exposed on this url "http://mydemoapp.com:80
 - Micro-Service User
    - / ms-user / users
    - / ms-user / users / {id}
-
-- Micro-Service Address
-   - / ms-address / addresses
-   - / ms-address / addresses / {id} 
