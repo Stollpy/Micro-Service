@@ -1,0 +1,6 @@
+HOSTNAME=api.pensebete.com
+ACME_EMAIL=florian@panierdachat.com
+ACME_STORAGE=acme.json
+CERT_RESOLVER_NAME=pensebete
+TRAEFIK_ID=PenseBete
+TRAEFIK_PASSWORD=$apr1$T2ehJ39j$G9kf31xCvu40LZFKQkiS//

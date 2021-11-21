@@ -1,113 +1,44 @@
-version: "3.8"
+version: "3.4"
 services:
 
   # Traefik
   traefik:
+    container_name: traefik
     image: traefik:v2.3.6
     restart: always
     command:
-      - --accesslog
-      - --api.insecure=true
-      - --providers.docker
-      - --providers.docker.exposedbydefault=false
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --entrypoints.web.address=:80
+# in prod
+#      - --entrypoints.websecure.address=:443
+#      - --certificatesresolvers.${CERT_RESOLVER_NAME}.acme.httpchallenge=true
+#      - --certificatesresolvers.${CERT_RESOLVER_NAME}.acme.httpchallenge.entrypoint=web
+#      - --certificatesresolvers.${CERT_RESOLVER_NAME}.acme.email=${ACME_EMAIL}
+#      - --certificatesresolvers.${CERT_RESOLVER_NAME}.acme.storage=${ACME_STORAGE}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    ports:
-      - 80:80     # http
-      - 8080:8080 # dashboard
-    networks:
-      - app
-
-
-  # Service permettant de générer une paire de clé ssl
-  reverse-proxy-https-helper:
-    image: alpine
-    container_name: generate_key_ssl
-    command: sh -c "cd /etc/ssl/traefik
-      && wget traefik.me/cert.pem -O cert.pem
-      && wget traefik.me/privkey.pem -O privkey.pem"
-    volumes:
-      - certs:/etc/ssl/traefik
-    networks:
-      - app
-
-
-  # Network User
-
-  # BDD #
-  db-user:
-    image: mysql
-    container_name: db_user
-    restart: always
-    volumes:
-      - db-user:/var/lib/mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ms-user
-    ports:
-      - 33061:3306
-    networks:
-      - app
-
-  # Micro-Service #
-  ms-user:
-    build: ms-user
-    container_name: ms-user
-    expose:
-      - 80
-    volumes:
-      - ./ms-user/vhosts:/etc/apache2/sites-enabled
-      - ./ms-user/:/var/www/html/user
-    restart: always
     labels:
+      - traefik.docker.network=backend
       - traefik.enable=true
-      - traefik.http.routers.ms-user.rule=Host(`mydemoapp.com`) && PathPrefix(`/api/users`)
-    networks:
-      - app
-
-
-
-  # Network Address
-
-  # BDD #
-  db-address:
-    image: mysql
-    container_name: db_address
-    restart: always
-    volumes:
-      - db-address:/var/lib/mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: ms-address
+      - traefik.http.routers.api.rule=Host(`${HOSTNAME}`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`)) # create router and add PathPrefix
+      - traefik.http.routers.api.entrypoints=web
+# in prod
+#      - traefik.http.routers.api.entrypoints=websecure
+#      - traefik.http.routers.api.tls=true
+#      - traefik.http.routers.api.tls.certresolver=${CERT_RESOLVER_NAME}
+      - traefik.http.routers.api.service=api@internal
+      - traefik.http.routers.api.middlewares=auth # create middlewares auth
+      - traefik.http.middlewares.auth.basicauth.users=${TRAEFIK_ID}:${TRAEFIK_PASSWORD} # hash password in apr1
     ports:
-      - 33062:3306
+      - '80:80'     # http
+      - '443:4443' # https
     networks:
-      - app
-
-  # Micro-Service #
-  ms-address:
-    build: ms-address
-    container_name: ms-address
-    expose:
-      - 80
-    volumes:
-      - ./ms-address/vhosts:/etc/apache2/sites-enabled
-      - ./ms-address/:/var/www/html/address
-    restart: always
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.ms-address.rule=Host(`mydemoapp.com`) && PathPrefix(`/api/addresses`)
-    networks:
-      - app
-
+      - backend
+      - ms-user_backend_user
 
 networks:
-  app:
+  backend:
 
-
-volumes:
-  db-user:
-
-  db-address:
-
-  certs:
+  ms-user_backend_user:
+    external: true

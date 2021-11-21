@@ -1,6 +1,6 @@
-[submodule "ms-address"]
-	path = ms-address
-	url = https://github.com/Stollpy/MS-Address.git
 [submodule "ms-user"]
 	path = ms-user
 	url = https://github.com/Stollpy/MS-User.git
+[submodule "ms-profile"]
+	path = ms-profile
+	url = https://github.com/Stollpy/MS-Profile.git
